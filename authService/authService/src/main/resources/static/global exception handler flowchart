@@ -1,0 +1,65 @@
+┌─────────────────────────────────────────────────────────────────┐
+│                     REQUEST ARRIVES                              │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              CONTROLLER METHOD EXECUTES                          │
+│         (UserController, BookingController, etc.)               │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+                  ┌──────────────────┐
+                  │ Exception Thrown │
+                  └────────┬─────────┘
+                           │
+                ┌──────────┴──────────┐
+                │                     │
+                ▼                     ▼
+        ┌───────────────┐    ┌────────────────┐
+        │ AuthException │    │ Other Exception│
+        └───────┬───────┘    └────────┬───────┘
+                │                     │
+                ▼                     ▼
+        ┌───────────────────────────────────────┐
+        │  GlobalExceptionHandler               │
+        │  (@ControllerAdvice)                  │
+        │                                       │
+        │  Catches ALL exceptions globally      │
+        └───────────┬───────────────────────────┘
+                    │
+        ┌───────────┴──────────────────────┐
+        │  Matches Exception Type           │
+        │                                   │
+        ├─→ @ExceptionHandler(AuthException)
+        ├─→ @ExceptionHandler(IllegalArgumentException)
+        ├─→ @ExceptionHandler(NullPointerException)
+        └─→ @ExceptionHandler(Exception) [CATCH ALL]
+                    │
+                    ▼
+        ┌────────────────────────────┐
+        │ Create ErrorResponse DTO   │
+        │ - Status Code              │
+        │ - Error Code               │
+        │ - Message                  │
+        │ - Timestamp                │
+        │ - Request Path             │
+        └────────────┬───────────────┘
+                     │
+                     ▼
+        ┌────────────────────────────┐
+        │ Return ResponseEntity      │
+        │ with HTTP Status Code      │
+        └────────────┬───────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│            JSON ERROR RESPONSE SENT TO CLIENT                   │
+│  {                                                               │
+│    "status": 400,                                               │
+│    "errorCode": "INVALID_CREDENTIALS",                          │
+│    "message": "Username and password are required",             │
+│    "timestamp": "2025-12-23T14:30:45",                         │
+│    "path": "/api/auth/login"                                    │
+│  }                                                               │
+└─────────────────────────────────────────────────────────────────┘
