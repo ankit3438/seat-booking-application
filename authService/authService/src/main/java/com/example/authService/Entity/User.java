@@ -8,26 +8,34 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "users")
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
 public class User {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    Long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(unique = true, nullable = false)
-    String username;
+    private String username;
 
     @Column(nullable = false)
-    String password;
+    private String password;
 
-    String role;
+    private String role;
 
     @Column(name = "login_time")
-    LocalDateTime loginTime;
+    private LocalDateTime loginTime;
 
-    Boolean active = true;
+    private Boolean active = true;
 
 }
