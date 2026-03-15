@@ -36,6 +36,12 @@ public class User {
     @Column(name = "login_time")
     private LocalDateTime loginTime;
 
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
     private Boolean active = true;
 
 }

@@ -1,0 +1,316 @@
+# Spring Security with JWT Authentication Flow
+
+## 1. AUTHENTICATION FLOW (Login)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    CLIENT SENDS LOGIN REQUEST                       │
+│            POST /auth/login with username & password                │
+└────────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│              AUTHENTICATION CONTROLLER                               │
+│  - Receives username and password                                   │
+│  - Calls AuthenticationService                                      │
+└────────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│         SPRING SECURITY AUTHENTICATION MANAGER                       │
+│  - AuthenticationManager processes credentials                      │
+│  - Calls UserDetailsService to load user                            │
+└────────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│            USER DETAILS SERVICE                                      │
+│  - Loads user from database by username                             │
+│  - Returns UserDetails object with:                                 │
+│    * Username, Password, Authorities/Roles                          │
+└────────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│         PASSWORD ENCODER (BCrypt)                                    │
+│  - Encodes the provided password                                    │
+│  - Compares with stored hashed password                             │
+│  - If match → SUCCESS, If not → FAILURE                             │
+└────────────────────────┬────────────────────────────────────────────┘
+                         │
+        ┌────────────────┴────────────────┐
+        │                                 │
+        ▼                                 ▼
+   ✅ SUCCESS                         ❌ FAILURE
+        │                                 │
+        ▼                                 ▼
+┌──────────────────────────┐    ┌─────────────────────────┐
+│  JWT TOKEN GENERATOR     │    │  THROW EXCEPTION        │
+│  - Create JWT token with:│    │  BadCredentials         │
+│    * userId              │    │  Return 401 Unauthorized│
+│    * roles/authorities   │    └─────────────────────────┘
+│    * expiration time     │
+│    * signature (secret)  │
+└──────────┬───────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────┐
+│  RETURN JWT TOKEN TO CLIENT                  │
+│  {                                           │
+│    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI... │
+│    "type": "Bearer",                         │
+│    "expires": 3600000                        │
+│  }                                           │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+## 2. AUTHORIZATION FLOW (Using JWT Token)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│          CLIENT SENDS PROTECTED RESOURCE REQUEST                     │
+│  GET /api/users with Header: Authorization: Bearer <JWT_TOKEN>      │
+└────────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│              JWT AUTHENTICATION FILTER                               │
+│  - Intercepts request                                               │
+│  - Extracts JWT token from Authorization header                     │
+│  - Validates token format                                           │
+└────────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│            JWT TOKEN VALIDATOR                                       │
+│  - Checks if token is expired                                       │
+│  - Verifies signature (using secret key)                            │
+│  - Parses claims (userId, roles, etc.)                              │
+└────────────────────────┬────────────────────────────────────────────┘
+                         │
+        ┌────────────────┴────────────────┐
+        │                                 │
+        ▼                                 ▼
+   ✅ VALID TOKEN                    ❌ INVALID TOKEN
+        │                                 │
+        ▼                                 ▼
+┌──────────────────────────┐    ┌─────────────────────────┐
+│  EXTRACT USER INFO       │    │  THROW EXCEPTION        │
+│  - userId                │    │  TokenExpiredException/ │
+│  - roles/authorities     │    │  InvalidTokenException  │
+│  - Create Authentication │    │  Return 401 Unauthorized│
+│    object                │    └─────────────────────────┘
+└──────────┬───────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────┐
+│  SET SECURITY CONTEXT                        │
+│  - Store authentication in                   │
+│    SecurityContextHolder                     │
+│  - Now user is authenticated                 │
+└──────────┬───────────────────────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────┐
+│  AUTHORIZATION CHECK (if needed)             │
+│  - Check if user has required roles          │
+│  - @PreAuthorize("hasRole('ADMIN')")         │
+│  - If authorized → proceed                   │
+│  - If not → return 403 Forbidden             │
+└──────────┬───────────────────────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────┐
+│  CONTROLLER PROCESSES REQUEST                │
+│  - Access protected resource                │
+│  - Return response                           │
+└──────────┬───────────────────────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────┐
+│  RETURN RESPONSE TO CLIENT (200 OK)          │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+## 3. ESSENTIAL COMPONENTS TO BUILD
+
+### A. User Entity (Already have this ✅)
+```
+User
+├── id
+├── username
+├── password (hashed with BCrypt)
+├── email
+├── role (USER, ADMIN, etc.)
+└── active
+```
+
+### B. JWT Configuration & Utilities
+```
+JwtTokenProvider/JwtUtil
+├── generateToken(User)
+├── validateToken(token)
+├── extractUserId(token)
+├── extractRoles(token)
+└── isTokenExpired(token)
+```
+
+### C. Security Configuration
+```
+SecurityConfig
+├── PasswordEncoder (BCrypt)
+├── AuthenticationManager
+├── JwtAuthenticationFilter
+├── CorsConfiguration
+└── @EnableWebSecurity
+```
+
+### D. Authentication Components
+```
+AuthService
+├── authenticate(username, password)
+├── register(user)
+└── refreshToken(oldToken)
+
+UserDetailsService (Spring built-in)
+├── loadUserByUsername(username)
+```
+
+### E. JWT Authentication Filter
+```
+JwtAuthenticationFilter extends OncePerRequestFilter
+├── extractToken from header
+├── validateToken
+├── loadUserFromToken
+├── setSecurityContext
+```
+
+### F. Authentication Controller
+```
+AuthController
+├── POST /auth/login → return JWT
+├── POST /auth/register → create user
+├── POST /auth/refresh → refresh token
+└── POST /auth/logout → invalidate token
+```
+
+---
+
+## 4. REQUEST/RESPONSE EXAMPLES
+
+### Login Request/Response
+```
+REQUEST:
+POST /auth/login
+Content-Type: application/json
+
+{
+  "username": "john",
+  "password": "password123"
+}
+
+RESPONSE: (200 OK)
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "type": "Bearer",
+  "expiresIn": 3600000,
+  "userId": 1,
+  "username": "john"
+}
+```
+
+### Protected Resource Request
+```
+REQUEST:
+GET /api/users
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+RESPONSE: (200 OK)
+[
+  { "id": 1, "username": "john", "email": "john@example.com" },
+  { "id": 2, "username": "jane", "email": "jane@example.com" }
+]
+```
+
+### Invalid Token
+```
+REQUEST:
+GET /api/users
+Authorization: Bearer invalid_token
+
+RESPONSE: (401 Unauthorized)
+{
+  "status": 401,
+  "errorCode": "INVALID_TOKEN",
+  "message": "Invalid or expired JWT token"
+}
+```
+
+---
+
+## 5. DEPENDENCY INJECTION DIAGRAM
+
+```
+SecurityConfig
+    ↓
+    ├─→ PasswordEncoder (BCrypt)
+    │       └─→ Used by AuthenticationManager
+    │
+    ├─→ JwtTokenProvider
+    │       └─→ Used by JwtAuthenticationFilter
+    │
+    ├─→ JwtAuthenticationFilter
+    │       └─→ Intercepts all requests
+    │
+    ├─→ UserDetailsService
+    │       └─→ Loads users from database
+    │
+    └─→ AuthenticationManager
+            └─→ Authenticates credentials
+```
+
+---
+
+## 6. KEY DIFFERENCES
+
+| Component | Purpose |
+|-----------|---------|
+| **AuthenticationFilter** | Validates JWT and sets SecurityContext |
+| **UserDetailsService** | Loads user details from database |
+| **PasswordEncoder** | Encodes/matches passwords (BCrypt) |
+| **SecurityConfig** | Configures security beans and filters |
+| **JwtTokenProvider** | Generates, validates, and parses JWT tokens |
+| **AuthController** | Handles login/register/refresh endpoints |
+
+---
+
+## 7. TOKEN STRUCTURE (JWT)
+
+```
+Header.Payload.Signature
+
+Header: 
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+
+Payload:
+{
+  "userId": 1,
+  "username": "john",
+  "roles": ["USER"],
+  "iat": 1703410515,
+  "exp": 1703414115
+}
+
+Signature: HMACSHA256(base64(header) + "." + base64(payload), secret_key)
+```
+
+---
+
+Ready to implement? Should I create these components for your authService?
