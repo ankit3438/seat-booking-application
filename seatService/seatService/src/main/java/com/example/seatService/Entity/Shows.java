@@ -20,7 +20,7 @@ public class Shows {
     
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private Integer Id;
+    private Long Id;
 
     private String showId;
     private String movieName;
