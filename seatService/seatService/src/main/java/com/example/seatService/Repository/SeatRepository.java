@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import com.example.seatService.Entity.Seat;
 
 @Repository
-public interface SeatRepository extends JpaRepository<Seat, Long> {
+public interface SeatRepository extends JpaRepository<Seat, String> {
 
     public List<Seat> findByShowId(String showId);
 

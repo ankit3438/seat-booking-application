@@ -21,8 +21,7 @@ import lombok.Setter;
 public class Seat {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private Long Id;
+    private String seatId;
 
     private String seatNumber;
     private boolean isAvailable;

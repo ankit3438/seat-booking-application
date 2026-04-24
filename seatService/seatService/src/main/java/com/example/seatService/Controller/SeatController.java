@@ -33,12 +33,7 @@ public class SeatController {
     public ResponseEntity<?> addSeats(@RequestBody SeatDto seatDto) {
         //TODO: process POST request
         try{
-            Seat seat = new Seat();
-            seat.setSeatNumber(seatDto.getSeatNumber());
-            seat.setShowId(seatDto.getShowId());
-            seat.setAvailable(true);
-
-            return new ResponseEntity<>(seatService.addSeat(seat), HttpStatus.OK);
+            return new ResponseEntity<>(seatService.addSeat(seatDto), HttpStatus.OK);
 
         } catch (Exception e) {
             return new ResponseEntity<>("error while adding seat: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

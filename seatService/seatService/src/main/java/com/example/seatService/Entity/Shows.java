@@ -19,9 +19,6 @@ import jakarta.persistence.Id;
 public class Shows {
     
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private Long Id;
-
     private String showId;
     private String movieName;
     private String showTime;

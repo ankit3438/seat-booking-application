@@ -24,7 +24,7 @@ public class ShowService {
             show.setShowId(showDto.getShowId());
             show.setMovieName(showDto.getMovieName());  
             show.setShowTime(showDto.getShowTime());
-            show.setAvailableSeats(100);
+            show.setAvailableSeats(0);
             show.setTotalSeats(0);
 
             return showRepository.save(show);
@@ -34,7 +34,7 @@ public class ShowService {
         }
     }
 
-    public Shows getShows(Long id){
+    public Shows getShows(String id){
         try{
             return showRepository.findById(id).orElse(null);
         }

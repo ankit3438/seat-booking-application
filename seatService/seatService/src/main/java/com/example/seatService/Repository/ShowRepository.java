@@ -6,6 +6,6 @@ import org.springframework.stereotype.Repository;
 import com.example.seatService.Entity.Shows;
 
 @Repository
-public interface ShowRepository extends JpaRepository<Shows, Long> {
+public interface ShowRepository extends JpaRepository<Shows, String> {
 
 }

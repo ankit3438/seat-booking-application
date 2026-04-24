@@ -11,6 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class SeatDto {
 
+    private String seatId;
     private String seatNumber;
     private String showId;
 }
