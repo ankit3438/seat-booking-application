@@ -38,5 +38,10 @@ public class SeatService {
         return seatRepository.findByShowId(Show_id);
     }
 
+    public Seat getSeatById(String seatId) {
+        // TODO Auto-generated method stub
+        return seatRepository.findById(seatId).orElse(null);
+    }
+
 
 }

@@ -45,6 +45,10 @@ public class SeatController {
     public ResponseEntity<List<Seat>> getSeatByShowID(@PathVariable String showId) {
         return new ResponseEntity<>(seatService.getSeatByShowId(showId), HttpStatus.OK);
     }
-    
+
+    @GetMapping("/getSeat/{seatId}")
+    public ResponseEntity<Seat> getSeatBySeatNumber(@PathVariable String seatId) {
+        return new ResponseEntity<>(seatService.getSeatById(seatId), HttpStatus.OK);
+    }
 
 }
